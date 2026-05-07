@@ -48,12 +48,12 @@ def get_circuit_info_by_id(id):
         return None
     return circ[id]
 
-def _circuit_info_internal(attribute, id = None, name = None):
+def circuit_attribute_value(attribute, id = None, name = None):
     if id is None and name is None:
-        sys.stderr.write(f'Panic: _circuit_info_internal, both id and name are None\n')
+        sys.stderr.write(f'Panic: circuit_attribute_value, both id and name are None\n')
         sys.exit(1)
     if id is not None and name is not None:
-        sys.stderr.write(f'Panic: _circuit_info_internal, id={id} and name={name} are mutually exclusive. One should be None.\n')
+        sys.stderr.write(f'Panic: circuit_attribute_value, id={id} and name={name} are mutually exclusive. One should be None.\n')
         sys.exit(1)
     if id is not None:
         info = get_circuit_info_by_id(id)
@@ -90,7 +90,7 @@ def circuit_power_by_id(id):
     appropriate for the circuit.
     """
 
-    return _circuit_info_internal('instantPowerW', id=id)
+    return circuit_attribute_value('instantPowerW', id=id)
 
 def circuit_power_by_name(circuit_name):
     """Get the instantaneous power through a circuit.  The circuit
@@ -105,4 +105,4 @@ def circuit_power_by_name(circuit_name):
     appropriate for the circuit.
     """
 
-    return _circuit_info_internal('instantPowerW', name=circuit_name)
+    return circuit_attribute_value('instantPowerW', name=circuit_name)
