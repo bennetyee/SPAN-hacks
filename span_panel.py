@@ -6,8 +6,8 @@ import sys
 import time
 
 span_curl_cache_max_age = 10
-SPAN_CURL_CACHE = None
-SPAN_CURL_CACHE_TIME = None
+span_curl_cache = None
+span_curl_cache_time = None
 
 def span_curl_max_age():
     return span_curl_cache_max_age
@@ -18,13 +18,13 @@ def set_span_curl_cache_max_age(seconds):
     span_curl_cache_max_age = seconds
 
 def span_curl(api):
-    global SPAN_CURL_CACHE
-    global SPAN_CURL_CACHE_TIME
+    global span_curl_cache
+    global span_curl_cache_time
     now = time.time()
-    if SPAN_CURL_CACHE_TIME is None or now > SPAN_CURL_CACHE_TIME + span_curl_cache_max_age:
-        SPAN_CURL_CACHE = subprocess.run(['span-curl', api], capture_output=True, text=True)
-        SPAN_CURL_CACHE_TIME = now
-    return (SPAN_CURL_CACHE.stdout, SPAN_CURL_CACHE.returncode)
+    if span_curl_cache_time is None or now > span_curl_cache_time + span_curl_cache_max_age:
+        span_curl_cache = subprocess.run(['span-curl', api], capture_output=True, text=True)
+        span_curl_cache_time = now
+    return (span_curl_cache.stdout, span_curl_cache.returncode)
 
 def get_circuits():
     data, status = span_curl('/api/v1/circuits')
