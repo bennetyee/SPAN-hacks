@@ -21,34 +21,34 @@ def main(argv):
     p = argparse.ArgumentParser()
     p.add_argument('--show-progress', type=bool, default=False,
                    action=argparse.BooleanOptionalAction,
-                   help='Show polling activity.')
+                   help='Show polling activity (default False).')
     p.add_argument('--check-interval', type=int, 
                    default=CHECK_INTERVAL_SEC,
-                   help='Polling interval, in seconds')
+                   help=f'Polling interval, in seconds (default {CHECK_INTERVAL_SEC}).')
     p.add_argument('--min-power', type=float, default=MIN_POWER,
-                   help='Attribute value below which the circuit notification should fire')
+                   help=f'Attribute value below which the circuit notification should fire (default {MIN_POWER}).')
     p.add_argument('--max-power', type=float, default=MAX_POWER,
-                   help='Attribute value above which the circuit notification should fire')
+                   help=f'Attribute value above which the circuit notification should fire (default {MAX_POWER}).')
     p.add_argument('--id', type=str, default='',
-                   help='Id of the circuit to monitor')
+                   help='Id of the circuit to monitor.')
     p.add_argument('--circuit', type=str, default='',
                    help='Name of the circuit to monitor.  If --id is specified, this is ignored.')
     p.add_argument('--notifier', type=str, default=NOTIFIER_PROGRAM,
-                   help='Name of notification / alert program')
+                   help=f'Name of notification / alert program (default {NOTIFIER_PROGRAM}).')
     p.add_argument('--message', type=str, default=None,
-                   help='Argument for notification program')
+                   help='Argument for notification program (default "Check the [CIRCUIT] circuit").')
     p.add_argument('--attribute', type=str, default='instantPowerW',
-                   help='Which SPAN panel circuit attribute to monitor')
+                   help='Specify the SPAN panel circuit attribute to monitor (default "instantPowerW").')
     p.add_argument('--abs', type=bool, action=argparse.BooleanOptionalAction,
                    default=True,
-                   help='Use the absolute value for min/max thresholding')
+                   help='Use the absolute value for min/max thresholding (default True).')
     p.add_argument('--duration', type=int, default=1,
-                   help='Number of seconds value must exceed the threshold before notification is generated (avoid transients)')
+                   help='Number of seconds value must exceed the threshold before notification is generated (avoid transients, default 1).')
     p.add_argument('--once', type=bool, action=argparse.BooleanOptionalAction,
                    default=False,
-                   help='If set to True, exit after invoking notifier; otherwise check again.')
+                   help='If set to True, exit after invoking notifier; otherwise check again (default False).')
     p.add_argument('--verbose', '-v', action='count', default=0,
-                   help='Increment the verbosity level of debug output')
+                   help='Increment the verbosity level of debug output.')
 
     options = p.parse_args(argv[1:])
 
@@ -93,7 +93,7 @@ def main(argv):
                     if options.id is not None:
                         message = f'Check the circuit'
                     else:
-                        message = f'Check the {options.circuit} circuit breaker'
+                        message = f'Check the {options.circuit} circuit'
                 subprocess.run([options.notifier, message])
                 if options.once:
                     return 0
