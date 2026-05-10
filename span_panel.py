@@ -5,23 +5,23 @@ import subprocess
 import sys
 import time
 
-SPAN_CURL_CACHE_MAX_AGE = 5
+span_curl_cache_max_age = 10
 SPAN_CURL_CACHE = None
 SPAN_CURL_CACHE_TIME = None
 
 def span_curl_max_age():
-    return SPAN_CURL_CACHE_MAX_AGE
+    return span_curl_cache_max_age
 
 def set_span_curl_cache_max_age(seconds):
-    global SPAN_CURL_CACHE_MAX_AGE
+    global span_curl_cache_max_age
     assert seconds >= 0
-    SPAN_CURL_CACHE_MAX_AGE = seconds
+    span_curl_cache_max_age = seconds
 
 def span_curl(api):
     global SPAN_CURL_CACHE
     global SPAN_CURL_CACHE_TIME
     now = time.time()
-    if SPAN_CURL_CACHE_TIME is None or now > SPAN_CURL_CACHE_TIME + SPAN_CURL_CACHE_MAX_AGE:
+    if SPAN_CURL_CACHE_TIME is None or now > SPAN_CURL_CACHE_TIME + span_curl_cache_max_age:
         SPAN_CURL_CACHE = subprocess.run(['span-curl', api], capture_output=True, text=True)
         SPAN_CURL_CACHE_TIME = now
     return (SPAN_CURL_CACHE.stdout, SPAN_CURL_CACHE.returncode)
