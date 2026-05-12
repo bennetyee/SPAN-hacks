@@ -34,7 +34,7 @@ def main(argv):
 
     p.add_argument('--id', type=str, default='',
                    help='Id of the circuit to monitor.')
-    p.add_argument('--circuit', type=str, default='',
+    p.add_argument('--name', type=str, default='',
                    help='Name of the circuit to monitor.  If --id is specified, this is ignored.')
 
     p.add_argument('--attribute', type=str, default='instantPowerW',
@@ -64,23 +64,18 @@ def main(argv):
     if options.lower_threshold < MIN_MIN_POWER:
         sys.stderr.write(f'{argv[0]}: over min power level {options.lower_threshold} too low or negative; it should be at least {MIN_MIN_POWER}.\n')
         return 1
-    if options.check_interval < span_panel.span_curl_max_age():
-        new_cache_max_age = options.check_interval - 0.5
-        if options.verbose > 1:
-            sys.stderr.write(f'setting max cache age to {new_cache_max_age}\n')
-        span_panel.set_span_curl_cache_max_age(new_cache_max_age)
 
     if options.id == '':
         options.id = None
-    if options.circuit == '':
-        options.circuit = None
-    if options.id is None and options.circuit is None:
-        options.circuit = CIRCUIT_NAME
+    if options.name == '':
+        options.name = None
+    if options.id is None and options.name is None:
+        options.name = CIRCUIT_NAME
 
     dots = 0
     exceed_duration = 0
     while True:
-        v = span_panel.circuit_attribute_value(options.attribute, id=options.id, name=options.circuit)
+        v = span_panel.circuit_attribute_value(options.attribute, id=options.id, name=options.name)
         if options.verbose > 0:
             sys.stderr.write(f'v={v}\n')
         if v is None:
@@ -99,7 +94,7 @@ def main(argv):
                     if options.id is not None:
                         message = f'Check the circuit'
                     else:
-                        message = f'Check the {options.circuit} circuit'
+                        message = f'Check the {options.name} circuit'
                 subprocess.run([options.notifier, message])
                 if options.once:
                     return 0

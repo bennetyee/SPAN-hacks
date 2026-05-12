@@ -5,26 +5,9 @@ import subprocess
 import sys
 import time
 
-span_curl_cache_max_age = 10
-span_curl_cache = None
-span_curl_cache_time = None
-
-def span_curl_max_age():
-    return span_curl_cache_max_age
-
-def set_span_curl_cache_max_age(seconds):
-    global span_curl_cache_max_age
-    assert seconds >= 0
-    span_curl_cache_max_age = seconds
-
 def span_curl(api):
-    global span_curl_cache
-    global span_curl_cache_time
-    now = time.time()
-    if span_curl_cache_time is None or now > span_curl_cache_time + span_curl_cache_max_age:
-        span_curl_cache = subprocess.run(['span-curl', api], capture_output=True, text=True)
-        span_curl_cache_time = now
-    return (span_curl_cache.stdout, span_curl_cache.returncode)
+    d = subprocess.run(['span-curl', api], capture_output=True, text=True)
+    return (d.stdout, d.returncode)
 
 def get_circuits():
     data, status = span_curl('/api/v1/circuits')
@@ -35,18 +18,20 @@ def get_circuits():
         return d['circuits']
     return None
 
+def get_one_circuit(id):
+    data, status = span_curl(f'/api/v1/circuits/{id}')
+    if status == 0:
+        d = json.loads(data)
+        return d
+    return None
+
 def get_circuit_info_by_id(id):
     """Get the info json dict for a circuit.  The circuit must be
     identified by the its unique |id| (long hex string).
 
     """
 
-    circ = get_circuits()
-    if circ is None:
-        return None
-    if id not in circ.keys():
-        return None
-    return circ[id]
+    return get_one_circuit(id)
 
 def circuit_attribute_value(attribute, id = None, name = None):
     if id is None and name is None:
