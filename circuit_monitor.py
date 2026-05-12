@@ -22,31 +22,37 @@ def main(argv):
     p.add_argument('--show-progress', type=bool, default=False,
                    action=argparse.BooleanOptionalAction,
                    help='Show polling activity (default False).')
+
     p.add_argument('--check-interval', type=int, 
                    default=CHECK_INTERVAL_SEC,
                    help=f'Polling interval, in seconds (default {CHECK_INTERVAL_SEC}).')
-    p.add_argument('--min-power', type=float, default=MIN_POWER,
-                   help=f'Attribute value below which the circuit notification should fire (default {MIN_POWER}).')
-    p.add_argument('--max-power', type=float, default=MAX_POWER,
-                   help=f'Attribute value above which the circuit notification should fire (default {MAX_POWER}).')
-    p.add_argument('--id', type=str, default='',
-                   help='Id of the circuit to monitor.')
-    p.add_argument('--circuit', type=str, default='',
-                   help='Name of the circuit to monitor.  If --id is specified, this is ignored.')
-    p.add_argument('--notifier', type=str, default=NOTIFIER_PROGRAM,
-                   help=f'Name of notification / alert program (default {NOTIFIER_PROGRAM}).')
-    p.add_argument('--message', type=str, default=None,
-                   help='Argument for notification program (default "Check the [CIRCUIT] circuit").')
-    p.add_argument('--attribute', type=str, default='instantPowerW',
-                   help='Specify the SPAN panel circuit attribute to monitor (default "instantPowerW").')
-    p.add_argument('--abs', type=bool, action=argparse.BooleanOptionalAction,
-                   default=True,
-                   help='Use the absolute value for min/max thresholding (default True).')
     p.add_argument('--duration', type=int, default=1,
                    help='Number of seconds value must exceed the threshold before notification is generated (avoid transients, default 1).')
     p.add_argument('--once', type=bool, action=argparse.BooleanOptionalAction,
                    default=False,
                    help='If set to True, exit after invoking notifier; otherwise check again (default False).')
+
+    p.add_argument('--id', type=str, default='',
+                   help='Id of the circuit to monitor.')
+    p.add_argument('--circuit', type=str, default='',
+                   help='Name of the circuit to monitor.  If --id is specified, this is ignored.')
+
+    p.add_argument('--attribute', type=str, default='instantPowerW',
+                   help='Specify the SPAN panel circuit attribute to monitor (default "instantPowerW").')
+    p.add_argument('--abs', type=bool, action=argparse.BooleanOptionalAction,
+                   default=True,
+                   help='Use the absolute value for min/max thresholding (default True).')
+
+    p.add_argument('--lower-threshold', '-l', type=float, default=MIN_POWER,
+                   help=f'Attribute value below which the circuit notification should fire (default {MIN_POWER}).')
+    p.add_argument('--upper-threshold', '-u', type=float, default=MAX_POWER,
+                   help=f'Attribute value above which the circuit notification should fire (default {MAX_POWER}).')
+
+    p.add_argument('--notifier', type=str, default=NOTIFIER_PROGRAM,
+                   help=f'Name of notification / alert program (default {NOTIFIER_PROGRAM}).')
+    p.add_argument('--message', type=str, default=None,
+                   help='Argument for notification program (default "Check the [CIRCUIT] circuit").')
+
     p.add_argument('--verbose', '-v', action='count', default=0,
                    help='Increment the verbosity level of debug output.')
 
@@ -55,8 +61,8 @@ def main(argv):
     if options.check_interval < MIN_CHECK_INTERVAL:
         sys.stderr.write(f'{argv[0]}: check interval {options.check_interval} must be greater than {MIN_CHECK_INTERVAL}\n')
         return 1
-    if options.min_power < MIN_MIN_POWER:
-        sys.stderr.write(f'{argv[0]}: over min power level {options.min_power} too low or negative; it should be at least {MIN_MIN_POWER}.\n')
+    if options.lower_threshold < MIN_MIN_POWER:
+        sys.stderr.write(f'{argv[0]}: over min power level {options.lower_threshold} too low or negative; it should be at least {MIN_MIN_POWER}.\n')
         return 1
     if options.check_interval < span_panel.span_curl_max_age():
         new_cache_max_age = options.check_interval - 0.5
@@ -83,7 +89,7 @@ def main(argv):
         if options.abs:
             v = abs(v)
 
-        if v < options.min_power or options.max_power < v:
+        if v < options.lower_threshold or options.upper_threshold < v:
             exceed_duration += options.check_interval
             if options.verbose > 1:
                 sys.stderr.write(f'exceed_duration = {exceed_duration}\n')
