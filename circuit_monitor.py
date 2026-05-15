@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 import argparse
+from datetime import datetime
+from enum import Enum
 import subprocess
 import sys
 import time
@@ -17,6 +19,19 @@ NOTIFIER_PROGRAM='alert'
 # An annoying / loud notification.  I use this script:
 # (zenity --info --text="$*" --timeout=600; echo quit) | while ! read -t 1; do espeak -v 'en-us' "$*"; done
 
+class MonitorMode(Enum):
+    once = 'once'
+    transitions = 'transitions'
+    continuous = 'continuous'
+
+    def __str__(self):
+        return self.value
+
+class Excursion(Enum):
+    none = 0  # initial state or in-between low and high
+    low = 1
+    high = 2
+
 def main(argv):
     p = argparse.ArgumentParser()
     p.add_argument('--show-progress', type=bool, default=False,
@@ -28,9 +43,10 @@ def main(argv):
                    help=f'Polling interval, in seconds (default {CHECK_INTERVAL_SEC}).')
     p.add_argument('--duration', type=int, default=1,
                    help='Number of seconds value must exceed the threshold before notification is generated (avoid transients, default 1).')
-    p.add_argument('--once', type=bool, action=argparse.BooleanOptionalAction,
-                   default=False,
-                   help='If set to True, exit after invoking notifier; otherwise check again (default False).')
+    p.add_argument('--mode', type=MonitorMode,
+                   choices=[MonitorMode.once, MonitorMode.transitions, MonitorMode.continuous],
+                   default=MonitorMode.once,
+                   help='Choose monitoring mode: once means exiting after notifying once; continuous means notifying whenever the value is in a reportable zone; transitions means notifying upon entry to a reportable zone.')
 
     p.add_argument('--id', type=str, default='',
                    help='Id of the circuit to monitor.')
@@ -74,33 +90,56 @@ def main(argv):
 
     dots = 0
     exceed_duration = 0
+
+    state = Excursion.none
+    prev = Excursion.none
+
     while True:
         v = span_panel.circuit_attribute_value(options.attribute, id=options.id, name=options.name)
-        if options.verbose > 0:
+        if options.verbose > 1:
             sys.stderr.write(f'v={v}\n')
         if v is None:
-            sys.stderr.write(f'circuit id="{id}", name="{name}" does not exist/match\n')
-            sys.exit(1)
+            sys.stderr.write(f'{argv[0]}: circuit id="{options.id}", name="{options.name}" does not exist/match\n')
+            sys.stderr.write(f'{argv[0]}: assuming transient error\n') 
+            # sys.exit(1)
+            continue
         if options.abs:
             v = abs(v)
 
-        if v < options.lower_threshold or options.upper_threshold < v:
-            exceed_duration += options.check_interval
-            if options.verbose > 1:
-                sys.stderr.write(f'exceed_duration = {exceed_duration}\n')
-            if exceed_duration >= options.duration:
-                message = options.message
-                if message is None:
-                    if options.id is not None:
-                        message = f'Check the circuit'
-                    else:
-                        message = f'Check the {options.name} circuit'
-                subprocess.run([options.notifier, message])
-                if options.once:
-                    return 0
-                exceed_duration = 0
-        else:
+        cur = Excursion.none
+        if v < options.lower_threshold:
+            cur = Excursion.low
+        elif options.upper_threshold < v:
+            cur = Excursion.high
+
+        if cur != prev:
             exceed_duration = 0
+        else:
+            exceed_duration += options.check_interval
+            if options.verbose > 2:
+                sys.stderr.write(f'{argv[0]}: exceed_duration = {exceed_duration}\n')
+            if exceed_duration >= options.duration:
+                # this is a "real" state
+                if options.verbose > 1:
+                    sys.stderr.write(f'{argv[0]}: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: {cur}\n')
+                # but if it is not moving from high to low or vice versa (e.g.,
+                # low to none), should we ignore it?
+                if cur != Excursion.none and (options.mode == MonitorMode.once or options.mode == MonitorMode.continuous or (options.mode == MonitorMode.transitions and cur != state)):
+                    message = options.message
+                    if message is None:
+                        if options.id is not None:
+                            message = f'Check the circuit'
+                        else:
+                            message = f'Check the {options.name} circuit'
+                    if options.verbose > 0:
+                        sys.stderr.write(f'{argv[0]}: state: {cur}, message: {message}\n')
+                    subprocess.run([options.notifier, message])
+                    if options.mode == MonitorMode.once:
+                        return 0
+                    # update state only if not Excursion.none, we have
+                    # notified the state transition, etc
+                    state = cur
+        prev = cur
         time.sleep(options.check_interval)
         if options.show_progress:
             dots += 1
