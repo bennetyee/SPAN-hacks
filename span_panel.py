@@ -131,7 +131,7 @@ class Panel:
         if id is None and name is None:
             raise SpanError(f'Invocation of attribute_value must specific exactly one of "id" or "name" keyword arguments. Both are None.')
         if id is not None and name is not None:
-            raise SpanError(f'Invocation of attribute_value must specific exactly one of "id" or "name" keyword arguments. Both cannot be specified  (id={id}, name={name}).')
+            raise SpanError(f'Invocation of attribute_value must specific exactly one of "id" or "name" keyword arguments. Both cannot be specified. (id={id}, name={name}.)')
         if id is not None:
             info = self.get_circuit_by_id(id)
         else:

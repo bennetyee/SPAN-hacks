@@ -75,7 +75,7 @@ def main(argv):
         try:
             d = panel.get_circuits()
         except span_panel.SpanError as e:
-            sys.stderr.write(f'{argv[0]}: Could not get circuit information. Transient error? ({e}).')
+            sys.stderr.write(f'{argv[0]}: Could not get circuit information. Transient error? ({e}).\n')
             retries += 1
             if retries < options.max_retries:
                 time.sleep(options.retry_sleep)
@@ -103,7 +103,7 @@ def main(argv):
                         else:
                             out[id] = qq(f.find(id)[options.key])
                 except (JsonFinderError, KeyError) as e:
-                    sys.stderr.write(f'{argv[0]}: {e}')
+                    sys.stderr.write(f'{argv[0]}: {e}\n')
                     return 1
             if len(options.name) != 0:
                 try:
@@ -114,7 +114,7 @@ def main(argv):
                         else:
                             out[n] = qq(f.find(n)[options.key])
                 except (JsonFinderError, KeyError) as e:
-                    sys.stderr.write(f'{argv[0]}: {e}')
+                    sys.stderr.write(f'{argv[0]}: {e}\n')
                     return 1
     
         if options.key == '':
