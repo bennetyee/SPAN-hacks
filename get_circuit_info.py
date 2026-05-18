@@ -4,6 +4,7 @@
 
 import argparse
 import json
+import shlex
 import sys
 import time
 
@@ -39,6 +40,9 @@ def main(argv):
                    help='If specified, instead of printing JSON for the selected circuit(s), print only the value corresponding to the given key.  If multiple circuits are selected, the values are printed on a single line, separated by SEPARATOR.  The (unlabeled) values are output in the following order:  id circuits first, then named circuits; if --all was used, then the order is sorted by key (ID).')
     p.add_argument('--separator', '-s', type=str, default=' ',
                    help='When --key is used and multiple circuits are selected, the value associated with the key are printed on a single line, separated by this character.') 
+    p.add_argument('--quote', '-q', type=bool, default=False,
+                   action=argparse.BooleanOptionalAction,
+                   help='When --key is used, quote the output value with shlex.quote so that the output can be used by the shell via eval such that each output is a distinct argument.  Use with care.')
     p.add_argument('--live', type=int, default=0,
                    help='If non-zero, poll the panel every LIVE seconds in an infinite loop.  This is used in conjunction with live_plotter or similar programs.')
     options = p.parse_args(argv[1:])
@@ -46,6 +50,10 @@ def main(argv):
     if not options.all and len(options.id) == 0 and len(options.name) == 0:
         sys.stderr.write(f'{argv[0]}: No circuits specified.\n')
         return 1
+
+    qq = lambda s: s
+    if options.quote:
+        qq = lambda s: shlex.quote(s)
 
     while True:
         d = span_panel.get_circuits()
@@ -59,7 +67,7 @@ def main(argv):
                 out = d
             else:
                 for k, v in d.items():
-                    out[k] = v[options.key]
+                    out[k] = qq(v[options.key])
             kwargs['sort_keys'] = True
         else:
             # Since Python 3.7, dict insertion order is preserved.
@@ -70,7 +78,7 @@ def main(argv):
                         if options.key == '':
                             out[id] = f.find(id)
                         else:
-                            out[id] = f.find(id)[options.key]
+                            out[id] = qq(f.find(id)[options.key])
                 except (JsonFinderError, KeyError) as e:
                     sys.stderr.write(f'{argv[0]}: {e}')
                     return 1
@@ -81,7 +89,7 @@ def main(argv):
                         if options.key == '':
                             out[n] = f.find(n)
                         else:
-                            out[n] = f.find(n)[options.key]
+                            out[n] = qq(f.find(n)[options.key])
                 except (JsonFinderError, KeyError) as e:
                     sys.stderr.write(f'{argv[0]}: {e}')
                     return 1
