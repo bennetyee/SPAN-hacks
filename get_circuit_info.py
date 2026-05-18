@@ -38,6 +38,9 @@ def main(argv):
                    help='Print circuit information for list of circuit identified by their (user assigned) names.')
     p.add_argument('--key', '-k', type=str, default='',
                    help='If specified, instead of printing JSON for the selected circuit(s), print only the value corresponding to the given key.  If multiple circuits are selected, the values are printed on a single line, separated by SEPARATOR.  The (unlabeled) values are output in the following order:  id circuits first, then named circuits; if --all was used, then the order is sorted by key (ID).')
+    p.add_argument('--abs', type=bool, default=False,
+                   action=argparse.BooleanOptionalAction,
+                   help='When --key is used and the value is a real number, use the absolute value instead.  This is useful when the current sensor is installed backwards.')
     p.add_argument('--separator', '-s', type=str, default=' ',
                    help='When --key is used and multiple circuits are selected, the value associated with the key are printed on a single line, separated by this character.') 
     p.add_argument('--quote', '-q', type=bool, default=False,
@@ -51,9 +54,13 @@ def main(argv):
         sys.stderr.write(f'{argv[0]}: No circuits specified.\n')
         return 1
 
-    qq = lambda s: s
+    abs_opt = lambda v: v
+    if options.abs:
+        abs_opt = lambda v: abs(v) if isinstance(v, (int, float)) else v
+
+    qq = lambda s: abs_opt(s)
     if options.quote:
-        qq = lambda s: shlex.quote(s)
+        qq = lambda s: shlex.quote(abs_opt(s))
 
     while True:
         d = span_panel.get_circuits()
