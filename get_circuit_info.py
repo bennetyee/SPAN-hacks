@@ -48,6 +48,11 @@ def main(argv):
                    help='When --key is used, quote the output value with shlex.quote so that the output can be used by the shell via eval such that each output is a distinct argument.  Use with care.')
     p.add_argument('--live', type=int, default=0,
                    help='If non-zero, poll the panel every LIVE seconds in an infinite loop.  This is used in conjunction with live_plotter or similar programs.')
+    p.add_argument('--max-retries', type=int, default=4,
+                   help='Retries this many times if the circuit info request fails.  SPAN panels sometimes close the connection without replying.')
+    p.add_argument('--retry-sleep', type=float, default=0.5,
+                   help='When retrying a circuit info request, sleep this long between requests.')
+
     options = p.parse_args(argv[1:])
 
     if not options.all and len(options.id) == 0 and len(options.name) == 0:
@@ -62,11 +67,22 @@ def main(argv):
     if options.quote:
         qq = lambda s: shlex.quote(abs_opt(s))
 
+    panels = span_panel.AuthInfo()
+    panel = panels.panel()  # default panel
+
+    retries = 0
     while True:
-        d = span_panel.get_circuits()
-        if d is None:
-            sys.stderr.write(f'{argv[0]}: Could not get circuit information.')
+        try:
+            d = panel.get_circuits()
+        except span_panel.SpanError as e:
+            sys.stderr.write(f'{argv[0]}: Could not get circuit information. Transient error? ({e}).')
+            retries += 1
+            if retries < options.max_retries:
+                time.sleep(options.retry_sleep)
+                continue
             return 1
+        retries = 0
+
         out = {}
         kwargs = {'indent': 4, 'ensure_ascii': False}
         if options.all:

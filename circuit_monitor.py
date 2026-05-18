@@ -94,12 +94,16 @@ def main(argv):
     state = Excursion.none
     prev = Excursion.none
 
+    panels = span_panel.AuthInfo()
+    panel = panels.panel()  # default panel
+
     while True:
-        v = span_panel.circuit_attribute_value(options.attribute, id=options.id, name=options.name)
-        if options.verbose > 1:
-            sys.stderr.write(f'v={v}\n')
-        if v is None:
-            sys.stderr.write(f'{argv[0]}: circuit id="{options.id}", name="{options.name}" does not exist/match\n')
+        try:
+            v = panel.attribute_value(options.attribute, id=options.id, name=options.name)
+            if options.verbose > 1:
+                sys.stderr.write(f'v={v}\n')
+        except (span_panel.SpanError, KeyError) as e:
+            sys.stderr.write(f'{argv[0]}: circuit id="{options.id}", name="{options.name}" error {e}\n')
             sys.stderr.write(f'{argv[0]}: assuming transient error\n') 
             # sys.exit(1)
             continue
