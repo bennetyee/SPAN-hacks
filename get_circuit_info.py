@@ -58,7 +58,7 @@ def main(argv):
             if options.key == '':
                 out = d
             else:
-                for k, v in d:
+                for k, v in d.items():
                     out[k] = v[options.key]
             kwargs['sort_keys'] = True
         else:
